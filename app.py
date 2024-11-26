@@ -1,6 +1,7 @@
 import os
 from flask import Flask, render_template, request, jsonify
 import google.generativeai as genai
+genai.configure(api_key="AIzaSyCbCM41NsQbhQMb7-wXg4B1v7xTEvgCV5Y")# Configure the API key
 import time
 
 app = Flask(__name__)
@@ -8,9 +9,6 @@ app = Flask(__name__)
 # Basic configurations
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
 app.config['PROPAGATE_EXCEPTIONS'] = True
-
-# Configure the API key
-genai.configure(api_key="AIzaSyCbCM41NsQbhQMb7-wXg4B1v7xTEvgCV5Y")
 
 # Generation configuration
 generation_config = {
