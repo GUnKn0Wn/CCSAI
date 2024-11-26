@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat with CCSai</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Ensure consistent font across the entire application */
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .chat-container {
+            background-color: white;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .chat-header {
+            background-color:#ab6b52;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 1.2em;
+            position: relative;
+        }
+
+        .exit-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background-color: #72514d;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-family: inherit; /* Ensure consistency */
+        }
+
+        .exit-button:hover {
+            background-color: #adb0ab;
+        }
+
+        .chat-messages {
+            padding: 15px;
+            height: 300px;
+            overflow-y: auto;
+            flex-grow: 1;
+            box-sizing: border-box;
+            max-width: 100%;
+        }
+
+        .message-group {
+            margin-bottom: 20px;
+        }
+
+        .user-message {
+            align-self: flex-start;
+            color: white;
+            background-color: #ab6b52;
+            padding: 10px;
+            border-radius: 8px;
+            max-width: 100%;
+            width: fit-content;
+            overflow-wrap: break-word;
+            white-space: pre-wrap;
+            font-family: inherit; /* Ensure consistency */
+        }
+
+        .bot-message {
+            position: relative;
+            background-color:#cf9971;
+            color:white;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 100%;
+            width: fit-content;
+            margin: 0;
+            overflow-wrap: break-word;
+            white-space: pre-wrap;
+            line-height: 1.4;
+            display: flex;
+            flex-direction: column;
+            padding-right: 80px; /* Increased padding to accommodate the copy button */
+            margin-top: 10px;
+            font-family: inherit; /* Ensure consistency */
+        }
+
+        .bot-message code {
+            display: block;
+            background-color: #fffff4;
+            color:black;
+            padding: 5px;
+            border-radius: 5px;
+            overflow-x: auto;
+            max-width: 100%;
+            white-space: pre;
+            font-family: inherit; /* Ensure consistency */
+        }
+
+        .loading {
+            background-color: #878383;
+            animation: pulse 1.5s infinite;
+            padding: 5px 10px;
+            border-radius: 8px;
+            width: fit-content;
+            max-width: 150px;
+            text-align: center;
+            font-family: inherit; /* Ensure consistency */
+        }
+
+        .chat-input {
+            display: flex;
+            border-top: 1px solid #ccc;
+        }
+
+        .chat-input textarea {
+            flex-grow: 1;
+            padding: 15px;
+            border: none;
+            outline: none;
+            resize: none;
+            font-family: inherit; /* Ensure consistency */
+        }
+
+        .chat-input button {
+            padding: 15px;
+            border: none;
+            background-color: #72514d;
+            color: white;
+            cursor: pointer;
+            font-family: inherit; /* Ensure consistency */
+        }
+
+        .chat-input button:hover {
+            background-color: #adb0ab;
+        }
+
+        .copy-button {
+            position: absolute;
+            top: 10px;
+            right: 10px; /* Reduced the distance from the right edge */
+            background-color: #f9f9f6;
+            color: black;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.85em;
+            padding: 5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            z-index: 1;
+            font-family: inherit; /* Ensure consistency */
+            max-width: calc(100% - 20px); /* Prevent it from overflowing the container */
+            overflow: hidden; /* Ensures long text doesn't break the layout */
+        }
+        
+
+        .copy-button:hover {
+            background-color: #adb0ab;
+            color: white;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0.2;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.2;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            Chat with CCSai
+            <button class="exit-button" onclick="exitChat()">Exit</button>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <!-- Messages will be appended here -->
+        </div>
+        <div class="chat-input">
+            <textarea id="message" placeholder="Type your message..." required rows="3"></textarea>
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('message').addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+
+        async function sendMessage() {
+            const messageInput = document.getElementById('message');
+            const message = messageInput.value.replace(/\n/g, '<br>');
+            messageInput.value = '';
+
+            const chatMessages = document.getElementById('chat-messages');
+
+            const messageGroup = document.createElement('div');
+            messageGroup.classList.add('message-group');
+
+            const userMessageDiv = document.createElement('div');
+            userMessageDiv.classList.add('user-message');
+            userMessageDiv.innerHTML = `<div>${message}</div>`;
+            messageGroup.appendChild(userMessageDiv);
+
+            const loadingDiv = document.createElement('div');
+            loadingDiv.classList.add('bot-message', 'loading');
+            loadingDiv.innerHTML = `<div>...</div>`;
+            messageGroup.appendChild(loadingDiv);
+
+            chatMessages.appendChild(messageGroup);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            const maxRetries = 3;
+            let attempts = 0;
+            let success = false;
+
+            while (attempts < maxRetries && !success) {
+                try {
+                    attempts++;
+                    const response = await fetch('/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message }),
+                    });
+
+                    if (!response.ok) throw new Error(`Server error: ${response.statusText}`);
+
+                    const data = await response.json();
+                    const botResponse = data.response.replace(/\*/g, '')
+                        .replace(/```([^`]*)```/g, function (match, code) {
+                            const formattedCode = code.split('\n').map(line => line.trimStart()).join('\n');
+                            return `<pre><code style="white-space: pre-wrap;">${formattedCode}</code></pre>`;
+                        });
+
+                    loadingDiv.classList.remove('loading');
+                    loadingDiv.innerHTML = `
+                        <div>${botResponse}</div>
+                        <button onclick="copyToClipboard(this)" class="copy-button">
+                             <span>Copy</span> <i class="fas fa-copy"></i>
+                        </button>
+                    `;
+
+                    success = true;
+                } catch (error) {
+                    console.log(`Attempt ${attempts} failed:`, error);
+
+                    if (attempts >= maxRetries) {
+                        loadingDiv.classList.remove('loading');
+                        loadingDiv.innerHTML = `<div>Sorry, something went wrong. Please try again.</div>`;
+                    } else {
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                }
+            }
+
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function copyToClipboard(button) {
+            const botMessageDiv = button.previousElementSibling;
+            const textToCopy = botMessageDiv.innerText || botMessageDiv.textContent;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                alert('Response copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+            });
+        }
+
+        function exitChat() {
+            parent.postMessage('exit', '*');
+        }
+    </script>
+</body>
+
+</html>
